@@ -1,0 +1,22 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+cdev_own	irq.c	/^struct cdev   cdev_own;$/;"	m	struct:irq_switch	typeref:struct:irq_switch::cdev	file:
+class_own	irq.c	/^struct class  *class_own;$/;"	m	struct:irq_switch	typeref:struct:irq_switch::class	file:
+devt	irq.c	/^dev_t devt;$/;"	v
+driver_name	irq.c	/^const char  driver_name[] = "irq_switch";$/;"	v
+irq_cdev	irq.c	/^static int  __init irq_cdev()$/;"	f	file:
+irq_class	irq.c	/^static int  __init irq_class()$/;"	f	file:
+irq_exit1	irq.c	/^module_exit(irq_exit1);$/;"	v
+irq_exit1	irq.c	/^static int  __exit  irq_exit1(void)$/;"	f	file:
+irq_fops	irq.c	/^static const struct file_operations irq_fops = {$/;"	v	typeref:struct:file_operations	file:
+irq_init	irq.c	/^module_init(irq_init);$/;"	v
+irq_init	irq.c	/^static int __init  irq_init()$/;"	f	file:
+irq_read	irq.c	/^void irq_read()$/;"	f
+irq_switch	irq.c	/^struct irq_switch $/;"	s	file:
+irq_switch	irq.c	/^struct irq_switch irq_switch;$/;"	v	typeref:struct:irq_switch
+irq_write	irq.c	/^void irq_write()$/;"	f
+my_isr	irq.c	/^static irq_handler_t my_isr(int num, void *dev_id,struct pt_regs *regs)$/;"	f	file:
