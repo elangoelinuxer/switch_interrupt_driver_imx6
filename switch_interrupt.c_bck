@@ -11,48 +11,10 @@
 #include<linux/fcntl.h>
 #include<linux/kernel.h>
 #include<linux/module.h>
-#include<linux/signal.h>
-#include<linux/ioctl.h>
-
-#include <asm/siginfo.h>        //siginfo    
-#include <linux/sched.h>        //find_task_by_pid_type         
-
-
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/init.h>
-#include <net/sock.h>
-#include <linux/socket.h>
-#include <linux/net.h>
-#include <asm/types.h>
-#include <linux/netlink.h>
-#include <linux/skbuff.h> 
 
 
 
-
-//--------------------
-#define SIG_TEST 44
-struct siginfo info;        
-struct task_struct *t;             
-int ret=0;                
-
-
-#define NETLINK_USER 31 
-
-struct sock *nl_sk = NULL; 
-
-
-static void hello_nl_recv_msg(struct sk_buff *skb);
-
-
-         
-//---------------------
-
-char my_data[80]="hi from kernel"; 
-
-
- char  driver_name[] = "switch_interrupt";
+const char  driver_name[] = "switch_interrupt";
 int status=0;
 
 
@@ -65,98 +27,17 @@ struct switch_interrupt
 struct switch_interrupt switch_interrupt;
 
 
-// -----------for creating own attributes ----------------
-
-struct kobject *kobj;
-/*
-
-static ssize_t my_show(struct kobject *kobj1, struct attribute *attr,char *buf)
-{
-    struct my_attr *a = container_of(attr, struct my_attr, attr);
-    return scnprintf(buf, PAGE_SIZE, "%d\n", a->value);
-}
-*/
-
-/*
-static ssize_t my_store(struct kobject *kobj, struct attribute *attr,const char *buf, size_t len)
-{
-    struct my_attr *a = container_of(attr, struct my_attr, attr);
-    sscanf(buf, "%d", &a->value);
-    return sizeof(int);
-}
-*/
-
-static struct sysfs_ops my_ops=
-{
-
-//	.show = my_show,
-//	.store = my_store,
-
-};
-
-
-struct my_attr
-{
-	struct attribute attr;
-	int value;
-
-};
-
-
-static struct my_attr my_first=
-{
-
-	.attr.name="first",
-	.attr.mode=0664,
-	.value=1,
-
-};
-
-static struct my_attr my_second=
-{
-
-	.attr.name="second",
-	.attr.mode=0664,
-	.value=2,
-
-};
-
-static struct attribute *my_attr[]=
-{
-	&my_first.attr,
-	&my_second.attr,
-	NULL
-
-};
-
-
-static struct kobj_type my_type=
-{
-
-	.sysfs_ops = &my_ops,
-//	.default_attr = my_attr,
-
-};
-
-
-static int own_attr()
-{
-
-	kobj=kzalloc(sizeof(*kobj),GFP_KERNEL);
-
-	if(kobj)
-	{
-		kobject_init(kobj,&my_type);
-
-
-	}
 
 
 
 
-}
 
-//--------------------- end of dealing attributes-------------------------------------
+
+
+
+
+
+
 
 static ssize_t irq_read(struct file *filp, char __user *buff, size_t count,loff_t *offp)
 {
@@ -258,20 +139,14 @@ static int __init  irq_class(void)
 
 }
 
-static k=1;
-
 static irq_handler_t my_isr(int num, void *dev_id,struct pt_regs *regs)
 {
 
 	printk("~~~~~~~~~~~~~~~mouse interrupt~~~~~~~~~~~~");
-	
-         //-------passing signal to user app
 
-
-         //-------------------------------
 	status=1;
-	
- 	return (irq_handler_t) IRQ_HANDLED;
+
+	return (irq_handler_t) IRQ_HANDLED;
 
 }
 
@@ -291,20 +166,6 @@ static int __init  irq_init(void)
         if (irq_class() < 0)      //function to create class
                 goto fail_2;
 
-        //own_attr();
-
-//----------------netlink-----------------------------       
-
-nl_sk=netlink_kernel_create(&init_net, NETLINK_USER, 0,hello_nl_recv_msg, NULL, THIS_MODULE);  
-    if(!nl_sk)  
-    {   
-            printk(KERN_ALERT "Error creating socket.\n");  
-            return -10;  
-    }  
-
-
-//----------------------------------------------------   
-
         return 0;
 
 fail_2:
@@ -315,52 +176,6 @@ fail_1:
         return -1;
 
 }
-
-//-----------netlink
-
-static void hello_nl_recv_msg(struct sk_buff *skb)
-{
-
-
-    struct nlmsghdr *nlh;
-    int pid;
-    struct sk_buff *skb_out;
-    int msg_size;
-    char *msg = "Hello from kernel";
-    int res;
-
-    printk(KERN_INFO "Entering: %s\n", __FUNCTION__);
-
-    msg_size = strlen(msg);
-
-    nlh = (struct nlmsghdr *)skb->data;
-
-    printk(KERN_INFO "Netlink received msg payload:%s\n", (char *)nlmsg_data(nlh));
-    pid = nlh->nlmsg_pid;  /*pid of sending process */
-
-    skb_out = nlmsg_new(msg_size, 0);
-
-    if (!skb_out)
-    {
-
-        printk(KERN_ERR "Failed to allocate new skb\n");
-        return;
-
-    }
-    nlh = nlmsg_put(skb_out, 0, 0, NLMSG_DONE, msg_size, 0);
-    NETLINK_CB(skb_out).dst_group = 0; /* not in mcast group */
-    strncpy(nlmsg_data(nlh), msg, msg_size);
-
-    res = nlmsg_unicast(nl_sk, skb_out, pid);
-
-    if (res < 0)
-        printk(KERN_INFO "Error while sending bak to user\n");
-
-
-} 
-
-//----------------
-
 
 static int  __exit  irq_exit1(void)
 {
@@ -376,9 +191,6 @@ static int  __exit  irq_exit1(void)
 	class_destroy(switch_interrupt.class_own);
 
 	free_irq(12, (void *)(my_isr));
-
-        netlink_kernel_release(nl_sk);
-
 
 }
 
