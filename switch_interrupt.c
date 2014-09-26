@@ -43,6 +43,8 @@ int ret=0;
 struct sock *nl_sk = NULL; 
 
 
+//char *msg ;
+
 static void hello_nl_recv_msg(struct sk_buff *skb);
 
 
@@ -266,9 +268,8 @@ static irq_handler_t my_isr(int num, void *dev_id,struct pt_regs *regs)
 	printk("~~~~~~~~~~~~~~~mouse interrupt~~~~~~~~~~~~");
 	
          //-------passing signal to user app
-
-
-         //-------------------------------
+     
+        
 	status=1;
 	
  	return (irq_handler_t) IRQ_HANDLED;
@@ -321,31 +322,34 @@ fail_1:
 static void hello_nl_recv_msg(struct sk_buff *skb)
 {
 
-
     struct nlmsghdr *nlh;
     int pid;
     struct sk_buff *skb_out;
     int msg_size;
-    char *msg = "Hello from kernel";
     int res;
 
-    printk(KERN_INFO "Entering: %s\n", __FUNCTION__);
 
+    char *msg = " NO INTERRUPT since last check.... ";
+
+    char *msg1 = " INTERRUPT OCCURED after your last check.... ";
+
+
+
+//    printk(KERN_INFO "Entering: %s\n", __FUNCTION__);
+
+if(status==0)
+{
     msg_size = strlen(msg);
 
     nlh = (struct nlmsghdr *)skb->data;
 
-    printk(KERN_INFO "Netlink received msg payload:%s\n", (char *)nlmsg_data(nlh));
+    printk(KERN_INFO "\n Driver Received an msg from User app......:  %s\n", (char *)nlmsg_data(nlh));
     pid = nlh->nlmsg_pid;  /*pid of sending process */
-
     skb_out = nlmsg_new(msg_size, 0);
-
     if (!skb_out)
     {
-
         printk(KERN_ERR "Failed to allocate new skb\n");
         return;
-
     }
     nlh = nlmsg_put(skb_out, 0, 0, NLMSG_DONE, msg_size, 0);
     NETLINK_CB(skb_out).dst_group = 0; /* not in mcast group */
@@ -355,6 +359,34 @@ static void hello_nl_recv_msg(struct sk_buff *skb)
 
     if (res < 0)
         printk(KERN_INFO "Error while sending bak to user\n");
+}
+else
+{
+   status=0; 
+
+   msg_size = strlen(msg1);
+
+    nlh = (struct nlmsghdr *)skb->data;
+
+    printk(KERN_INFO "\n Driver Received an msg from User app......:  %s\n", (char *)nlmsg_data(nlh));
+    pid = nlh->nlmsg_pid;  /*pid of sending process */
+    skb_out = nlmsg_new(msg_size, 0);
+    if (!skb_out)
+    {
+        printk(KERN_ERR "Failed to allocate new skb\n");
+        return;
+    }
+    nlh = nlmsg_put(skb_out, 0, 0, NLMSG_DONE, msg_size, 0);
+    NETLINK_CB(skb_out).dst_group = 0; /* not in mcast group */
+    strncpy(nlmsg_data(nlh), msg1, msg_size);
+
+    res = nlmsg_unicast(nl_sk, skb_out, pid);
+
+    if (res < 0)
+        printk(KERN_INFO "Error while sending bak to user\n");
+
+}
+
 
 
 } 

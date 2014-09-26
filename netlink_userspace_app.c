@@ -3,7 +3,7 @@
 
 #define NETLINK_USER 31
 
-#define MAX_PAYLOAD 1024 /* maximum payload size*/
+#define MAX_PAYLOAD 1024         /* maximum payload size*/
 struct sockaddr_nl src_addr, dest_addr;
 struct nlmsghdr *nlh = NULL;
 struct iovec iov;
@@ -34,7 +34,7 @@ void main()
     nlh->nlmsg_pid = getpid();
     nlh->nlmsg_flags = 0;
 
-    strcpy(NLMSG_DATA(nlh), "Hello");
+    strcpy(NLMSG_DATA(nlh), "  Is there any Interrupt ....?\n");
 
     iov.iov_base = (void *)nlh;
     iov.iov_len = nlh->nlmsg_len;
@@ -43,12 +43,12 @@ void main()
     msg.msg_iov = &iov;
     msg.msg_iovlen = 1;
 
-    printf("Sending message to kernel\n");
+    printf("Sending message to Driver......\n");
     sendmsg(sock_fd, &msg, 0);
-    printf("Waiting for message from kernel\n");
+    printf("Waiting for message from Driver.......\n");
 
-    /* Read message from kernel */
+    /* Read message from Driver */
     recvmsg(sock_fd, &msg, 0);
-    printf("Received message payload: %s\n", NLMSG_DATA(nlh));
+    printf("Received message from driver Regarding Interrupt....:  %s\n", NLMSG_DATA(nlh));
     close(sock_fd);
 }
