@@ -17,6 +17,8 @@
 #include <asm/siginfo.h>        //siginfo    
 #include <linux/sched.h>        //find_task_by_pid_type         
 
+#include<linux/kmod.h>          //user_mode_helper
+
 
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -43,10 +45,11 @@ int ret=0;
 struct sock *nl_sk = NULL; 
 
 
+
 //char *msg ;
 
 static void hello_nl_recv_msg(struct sk_buff *skb);
-
+static int usr_mode_app(void);
 
          
 //---------------------
@@ -66,27 +69,25 @@ struct switch_interrupt
 };
 struct switch_interrupt switch_interrupt;
 
-
+/*
 // -----------for creating own attributes ----------------
 
 struct kobject *kobj;
-/*
+
 
 static ssize_t my_show(struct kobject *kobj1, struct attribute *attr,char *buf)
 {
     struct my_attr *a = container_of(attr, struct my_attr, attr);
     return scnprintf(buf, PAGE_SIZE, "%d\n", a->value);
 }
-*/
 
-/*
+
 static ssize_t my_store(struct kobject *kobj, struct attribute *attr,const char *buf, size_t len)
 {
     struct my_attr *a = container_of(attr, struct my_attr, attr);
     sscanf(buf, "%d", &a->value);
     return sizeof(int);
 }
-*/
 
 static struct sysfs_ops my_ops=
 {
@@ -131,10 +132,8 @@ static struct attribute *my_attr[]=
 
 };
 
-
 static struct kobj_type my_type=
 {
-
 	.sysfs_ops = &my_ops,
 //	.default_attr = my_attr,
 
@@ -150,15 +149,13 @@ static int own_attr()
 	{
 		kobject_init(kobj,&my_type);
 
-
 	}
-
-
-
 
 }
 
 //--------------------- end of dealing attributes-------------------------------------
+
+*/
 
 static ssize_t irq_read(struct file *filp, char __user *buff, size_t count,loff_t *offp)
 {
@@ -267,8 +264,6 @@ static irq_handler_t my_isr(int num, void *dev_id,struct pt_regs *regs)
 
 	printk("~~~~~~~~~~~~~~~mouse interrupt~~~~~~~~~~~~");
 	
-         //-------passing signal to user app
-     
         
 	status=1;
 	
@@ -294,6 +289,7 @@ static int __init  irq_init(void)
 
         //own_attr();
 
+/*
 //----------------netlink-----------------------------       
 
 nl_sk=netlink_kernel_create(&init_net, NETLINK_USER, 0,hello_nl_recv_msg, NULL, THIS_MODULE);  
@@ -303,8 +299,11 @@ nl_sk=netlink_kernel_create(&init_net, NETLINK_USER, 0,hello_nl_recv_msg, NULL, 
             return -10;  
     }  
 
-
 //----------------------------------------------------   
+*/
+
+	usr_mode_app();
+
 
         return 0;
 
@@ -317,8 +316,53 @@ fail_1:
 
 }
 
-//-----------netlink
 
+static int usr_mode_app(void)
+{
+
+int ret;
+
+	struct subprocess_info  *sub_info;
+
+	char *argv[]={"/home/elango/my_works/driver_interrupt/using_usermodhelper/a.out",NULL};
+
+//	char *argv[]={"/usr/bin/firefox",NULL};
+        
+        printk(KERN_INFO "in usr_mode_app ...\n");
+
+	static char *envp[]={
+		             
+                           "HOME=/home/elango",
+			   "TERM=linux",
+			   "PATH=/sbin:/bin:/usr/sbin:/usr/bin",
+			    NULL	 			 
+                   
+			   };
+
+//if(strcmp(current->comm,"hello")==0)
+{
+
+ret=call_usermodehelper(argv[0],argv,envp,UMH_WAIT_EXEC);
+
+if(ret<0)
+printk("Failed in starting! %d\n",ret);
+else
+printk("Succeded in starting %d\n",ret);
+
+}
+
+
+return 0 ;
+
+
+}
+
+
+
+//-------end of user_mode_caller implementation ...................
+
+//-----------netlink
+/*
 static void hello_nl_recv_msg(struct sk_buff *skb)
 {
 
@@ -335,8 +379,6 @@ static void hello_nl_recv_msg(struct sk_buff *skb)
 
 
 
-//    printk(KERN_INFO "Entering: %s\n", __FUNCTION__);
-
 if(status==0)
 {
     msg_size = strlen(msg);
@@ -344,7 +386,7 @@ if(status==0)
     nlh = (struct nlmsghdr *)skb->data;
 
     printk(KERN_INFO "\n Driver Received an msg from User app......:  %s\n", (char *)nlmsg_data(nlh));
-    pid = nlh->nlmsg_pid;  /*pid of sending process */
+    pid = nlh->nlmsg_pid;   // pid of sending process
     skb_out = nlmsg_new(msg_size, 0);
     if (!skb_out)
     {
@@ -352,7 +394,7 @@ if(status==0)
         return;
     }
     nlh = nlmsg_put(skb_out, 0, 0, NLMSG_DONE, msg_size, 0);
-    NETLINK_CB(skb_out).dst_group = 0; /* not in mcast group */
+    NETLINK_CB(skb_out).dst_group = 0;  // not in mcast group 
     strncpy(nlmsg_data(nlh), msg, msg_size);
 
     res = nlmsg_unicast(nl_sk, skb_out, pid);
@@ -364,12 +406,12 @@ else
 {
    status=0; 
 
-   msg_size = strlen(msg1);
+    msg_size = strlen(msg1);
 
     nlh = (struct nlmsghdr *)skb->data;
 
     printk(KERN_INFO "\n Driver Received an msg from User app......:  %s\n", (char *)nlmsg_data(nlh));
-    pid = nlh->nlmsg_pid;  /*pid of sending process */
+    pid = nlh->nlmsg_pid;  //pid of sending process 
     skb_out = nlmsg_new(msg_size, 0);
     if (!skb_out)
     {
@@ -377,7 +419,7 @@ else
         return;
     }
     nlh = nlmsg_put(skb_out, 0, 0, NLMSG_DONE, msg_size, 0);
-    NETLINK_CB(skb_out).dst_group = 0; /* not in mcast group */
+    NETLINK_CB(skb_out).dst_group = 0; // not in mcast group 
     strncpy(nlmsg_data(nlh), msg1, msg_size);
 
     res = nlmsg_unicast(nl_sk, skb_out, pid);
@@ -392,7 +434,7 @@ else
 } 
 
 //----------------
-
+*/
 
 static int  __exit  irq_exit1(void)
 {
@@ -409,7 +451,7 @@ static int  __exit  irq_exit1(void)
 
 	free_irq(12, (void *)(my_isr));
 
-        netlink_kernel_release(nl_sk);
+  //      netlink_kernel_release(nl_sk);
 
 
 }
